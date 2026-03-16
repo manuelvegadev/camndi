@@ -16,12 +16,28 @@ A lightweight native macOS menu bar app that captures a USB webcam and broadcast
 - **Live statistics** — resolution, capture/NDI FPS, data rate, frame counts
 - **Lightweight** — no GPU compositing overhead, direct pixel buffer passthrough to NDI
 
+## Install
+
+### Homebrew (recommended)
+
+```bash
+brew tap manuelvegadev/camndi
+brew install --cask camndi
+```
+
+### Manual download
+
+Download `CamNDI.dmg` from [Releases](https://github.com/manuelvegadev/CamNDI/releases), open it, and drag CamNDI to Applications.
+
+> No NDI SDK installation needed — `libndi.dylib` is bundled inside the app.
+
 ## Requirements
 
 - macOS 15 or later
-- [NDI SDK for Apple](https://ndi.video/for-developers/ndi-sdk/) installed
 
-## Setup
+## Building from source
+
+Building requires the [NDI SDK for Apple](https://ndi.video/for-developers/ndi-sdk/).
 
 1. **Install the NDI SDK**
 

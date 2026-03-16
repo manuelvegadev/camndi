@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install NDI SDK
+        run: |
+          # Download and install NDI SDK for macOS
+          # The installer places files at /Library/NDI SDK for Apple/
+          # For CI, we download the redistribution runtime
+          NDI_URL="https://github.com/DistroAV/DistroAV/releases/download/6.0.0/libndi-6.0.0-macOS.tar.gz"
+          curl -sL "$NDI_URL" -o ndi.tar.gz || true
+          # If the above fails, try the official SDK path
+          if [ ! -f ndi.tar.gz ] || [ ! -s ndi.tar.gz ]; then
+            echo "::warning::Could not download NDI runtime. Checking if SDK is pre-installed..."
+            if [ -f "/Library/NDI SDK for Apple/lib/macOS/libndi.dylib" ]; then
+              cp "/Library/NDI SDK for Apple/include/"*.h NDI/
+              cp "/Library/NDI SDK for Apple/lib/macOS/libndi.dylib" NDI/
+            else
+              echo "::error::NDI SDK not available. Install it on the runner or provide the dylib."
+              exit 1
+            fi
+          else
+            tar xzf ndi.tar.gz
+            find . -name "libndi*.dylib" -exec cp {} NDI/libndi.dylib \;
+          fi
+          # Ensure headers are present (needed for compilation)
+          if [ ! -f "NDI/Processing.NDI.Lib.h" ]; then
+            echo "::error::NDI headers not found in NDI/ folder"
+            exit 1
+          fi
+
+      - name: Build Release
+        run: |
+          xcodebuild \
+            -project CamNDI.xcodeproj \
+            -scheme CamNDI \
+            -configuration Release \
+            -derivedDataPath build/DerivedData \
+            SYMROOT=build/sym \
+            build
+
+      - name: Package DMG
+        run: ./scripts/build-dmg.sh
+
+      - name: Upload DMG to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/CamNDI.dmg
+          generate_release_notes: true
