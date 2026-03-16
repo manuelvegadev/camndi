@@ -68,8 +68,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func buildStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "camera.fill",
-                                   accessibilityDescription: "CamNDI")
+            if let icon = NSImage(named: "MenuBarIcon") {
+                icon.size = NSSize(width: 18, height: 18)
+                icon.isTemplate = true
+                button.image = icon
+            } else {
+                button.image = NSImage(systemSymbolName: "camera.fill",
+                                       accessibilityDescription: "CamNDI")
+            }
+            button.accessibilityLabel = "CamNDI"
         }
 
         let menu = NSMenu()

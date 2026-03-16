@@ -18,15 +18,6 @@ A lightweight native macOS menu bar app that captures a USB webcam and broadcast
 
 ## Install
 
-### Homebrew (recommended)
-
-```bash
-brew tap manuelvegadev/camndi
-brew install --cask camndi
-```
-
-### Manual download
-
 Download `CamNDI.dmg` from [Releases](https://github.com/manuelvegadev/CamNDI/releases), open it, and drag CamNDI to Applications.
 
 > No NDI SDK installation needed — `libndi.dylib` is bundled inside the app.
@@ -99,6 +90,11 @@ To create a distributable `.dmg` installer:
 This builds a Release configuration, embeds `libndi.dylib` inside the app bundle, and creates `build/CamNDI.dmg`. Users just drag CamNDI.app to Applications.
 
 > **Note:** For distribution to others, you should sign with a Developer ID certificate and notarize with Apple. See [Apple's documentation on notarization](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution).
+
+## Credits
+
+- [NDI](https://ndi.video/) — Network Device Interface SDK by Vizrt. CamNDI uses the NDI SDK to broadcast video over the local network.
+- [Phosphor Icons](https://phosphoricons.com/) — app icon and menu bar icon use the Phosphor webcam glyph.
 
 ## License
 
