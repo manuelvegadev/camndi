@@ -76,7 +76,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 button.image = NSImage(systemSymbolName: "camera.fill",
                                        accessibilityDescription: "CamNDI")
             }
-            button.accessibilityLabel = "CamNDI"
+            button.setAccessibilityLabel("CamNDI")
         }
 
         let menu = NSMenu()
