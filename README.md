@@ -1,5 +1,11 @@
 # CamNDI
 
+<p align="center">
+<img width="678" height="419" alt="image" src="https://github.com/user-attachments/assets/0742cb95-6864-40ca-a8ff-3f2164280688" /><br>
+   <em>Blurred image for privacy reasons</em>
+</p>
+
+
 A lightweight native macOS menu bar app that captures a USB webcam and broadcasts it as an NDI source on the local network.
 
 ![macOS 15+](https://img.shields.io/badge/macOS-15%2B-blue)
