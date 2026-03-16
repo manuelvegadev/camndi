@@ -2,8 +2,10 @@
 NDI/*.h
 NDI/*.dylib
 
-# Xcode
+# Build output
 build/
+
+# Xcode
 DerivedData/
 *.xcuserstate
 xcuserdata/

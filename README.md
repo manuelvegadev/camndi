@@ -72,6 +72,18 @@ AVCaptureSession → CVPixelBuffer → NDIlib_send_send_video_v2
 
 Frames pass directly from the camera to NDI with no intermediate processing. macOS system camera effects (portrait, background, studio light) are applied by the OS before frames reach the app.
 
+## Building a DMG
+
+To create a distributable `.dmg` installer:
+
+```bash
+./scripts/build-dmg.sh
+```
+
+This builds a Release configuration, embeds `libndi.dylib` inside the app bundle, and creates `build/CamNDI.dmg`. Users just drag CamNDI.app to Applications.
+
+> **Note:** For distribution to others, you should sign with a Developer ID certificate and notarize with Apple. See [Apple's documentation on notarization](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution).
+
 ## License
 
 MIT
