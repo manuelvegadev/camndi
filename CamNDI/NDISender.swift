@@ -1,0 +1,127 @@
+//
+//  NDISender.swift
+//  CamNDI
+//
+//  NDI SDK C API bridge and frame sending.
+//
+
+import Foundation
+import CoreVideo
+import os
+
+final class NDISender: @unchecked Sendable {
+
+    private var ndiInstance: NDIlib_send_instance_t?
+    private let queue = DispatchQueue(label: "com.camndi.ndi-send", qos: .userInteractive)
+    private let semaphore = DispatchSemaphore(value: 1)
+
+    // Stats — protected by statsLock (written on NDI/capture queues, read on main)
+    private let statsLock = OSAllocatedUnfairLock(initialState: (sent: Int64(0), bytes: Int64(0), dropped: Int64(0)))
+
+    var framesSent: Int64 { statsLock.withLock { $0.sent } }
+    var bytesSent: Int64 { statsLock.withLock { $0.bytes } }
+    var droppedFrames: Int64 { statsLock.withLock { $0.dropped } }
+
+    var isActive: Bool { queue.sync { ndiInstance != nil } }
+
+    func start() -> Bool {
+        guard NDIlib_initialize() else {
+            print("[CamNDI] NDIlib_initialize failed")
+            return false
+        }
+
+        let instance: NDIlib_send_instance_t? = "CamNDI".withCString { namePtr in
+            var settings = NDIlib_send_create_t()
+            settings.p_ndi_name = namePtr
+            settings.p_groups = nil
+            settings.clock_video = false  // Camera is our clock; no need for NDI to rate-limit
+            settings.clock_audio = false
+            return NDIlib_send_create(&settings)
+        }
+
+        guard let instance else {
+            print("[CamNDI] NDIlib_send_create failed")
+            NDIlib_destroy()
+            return false
+        }
+
+        queue.sync { ndiInstance = instance }
+        print("[CamNDI] NDI sender started — source name: CamNDI")
+        return true
+    }
+
+    func send(pixelBuffer: CVPixelBuffer) {
+        guard queue.sync(execute: { ndiInstance != nil }) else { return }
+
+        // Drop frame if previous send is still in progress
+        guard semaphore.wait(timeout: .now()) == .success else {
+            statsLock.withLock { $0.dropped += 1 }
+            return
+        }
+
+        let sem = self.semaphore
+
+        queue.async { [weak self] in
+            defer { sem.signal() }
+
+            guard let self, let instance = self.ndiInstance else { return }
+
+            CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
+            defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly) }
+
+            guard let baseAddress = CVPixelBufferGetBaseAddress(pixelBuffer) else { return }
+
+            let stride = Int32(CVPixelBufferGetBytesPerRow(pixelBuffer))
+            let height = Int32(CVPixelBufferGetHeight(pixelBuffer))
+
+            var frame = NDIlib_video_frame_v2_t()
+            frame.xres = Int32(CVPixelBufferGetWidth(pixelBuffer))
+            frame.yres = height
+            frame.FourCC = NDIlib_FourCC_type_BGRA
+            frame.frame_rate_N = 30000
+            frame.frame_rate_D = 1001
+            frame.picture_aspect_ratio = 0
+            frame.frame_format_type = NDIlib_frame_format_type_progressive
+            frame.timecode = Int64(NDIlib_send_timecode_synthesize)
+            frame.p_data = baseAddress.assumingMemoryBound(to: UInt8.self)
+            frame.line_stride_in_bytes = stride
+            frame.p_metadata = nil
+            frame.timestamp = 0
+
+            NDIlib_send_send_video_v2(instance, &frame)
+
+            self.statsLock.withLock {
+                $0.sent += 1
+                $0.bytes += Int64(stride) * Int64(height)
+            }
+        }
+    }
+
+    func restart() -> Bool {
+        stop()
+        resetStats()
+        return start()
+    }
+
+    func resetStats() {
+        statsLock.withLock { $0 = (0, 0, 0) }
+    }
+
+    func stop() {
+        queue.sync {
+            if let instance = ndiInstance {
+                NDIlib_send_send_video_v2(instance, nil)
+                NDIlib_send_destroy(instance)
+                ndiInstance = nil
+            }
+            NDIlib_destroy()
+        }
+        print("[CamNDI] NDI sender stopped")
+    }
+
+    deinit {
+        if ndiInstance != nil {
+            stop()
+        }
+    }
+}

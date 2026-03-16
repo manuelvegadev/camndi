@@ -1,0 +1,13 @@
+# NDI SDK (must be installed separately)
+NDI/*.h
+NDI/*.dylib
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# macOS
+.DS_Store
