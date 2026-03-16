@@ -1,6 +1,5 @@
-# NDI SDK (must be installed separately)
-NDI/*.h
-NDI/*.dylib
+# NDI SDK headers and runtime are committed for CI builds.
+# The headers are MIT-licensed. The dylib is redistributable per the NDI SDK license.
 
 # Build output
 build/
