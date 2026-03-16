@@ -11,7 +11,9 @@ BUILD_DIR="$PROJECT_DIR/build"
 DMG_DIR="$BUILD_DIR/dmg"
 APP_PATH="$BUILD_DIR/$APP_NAME.app"
 DMG_PATH="$BUILD_DIR/$APP_NAME.dmg"
-VERSION=$(/usr/libexec/PlistBuddy -c "Print :MARKETING_VERSION" "$PROJECT/project.pbxproj" 2>/dev/null || echo "1.0")
+BUILD_LOG="$BUILD_DIR/xcodebuild.log"
+
+VERSION=$(grep -m1 'MARKETING_VERSION' "$PROJECT/project.pbxproj" | sed 's/.*= *\(.*\);/\1/' | xargs)
 
 # ─── Preflight ────────────────────────────────────────────────────────
 if [ ! -f "$PROJECT_DIR/NDI/libndi.dylib" ]; then
@@ -25,6 +27,7 @@ echo "==> Building $APP_NAME $VERSION (Release)..."
 
 # ─── Clean & Build ────────────────────────────────────────────────────
 rm -rf "$BUILD_DIR"
+mkdir -p "$BUILD_DIR"
 
 xcodebuild \
     -project "$PROJECT" \
@@ -33,18 +36,26 @@ xcodebuild \
     -derivedDataPath "$BUILD_DIR/DerivedData" \
     SYMROOT="$BUILD_DIR/sym" \
     build \
-    2>&1 | tail -5
+    > "$BUILD_LOG" 2>&1 || {
+    echo "ERROR: Build failed. Last 50 lines:"
+    tail -50 "$BUILD_LOG"
+    exit 1
+}
 
-# Find the built .app
-BUILT_APP=$(find "$BUILD_DIR" -name "$APP_NAME.app" -type d | head -1)
+echo "==> Build succeeded"
 
-if [ -z "$BUILT_APP" ]; then
-    echo "ERROR: Build succeeded but $APP_NAME.app not found"
+# ─── Locate the built app (deterministic path) ──────────────────────
+BUILT_APP="$BUILD_DIR/sym/$CONFIG/$APP_NAME.app"
+
+if [ ! -d "$BUILT_APP" ]; then
+    echo "ERROR: $APP_NAME.app not found at expected path: $BUILT_APP"
+    echo "Searching build dir..."
+    find "$BUILD_DIR" -name "$APP_NAME.app" -type d
     exit 1
 fi
 
 cp -R "$BUILT_APP" "$APP_PATH"
-echo "==> App built at $APP_PATH"
+echo "==> App: $APP_PATH"
 
 # ─── Verify dylib is embedded ────────────────────────────────────────
 if [ ! -f "$APP_PATH/Contents/Frameworks/libndi.dylib" ]; then

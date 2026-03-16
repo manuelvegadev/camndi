@@ -10,5 +10,9 @@ DerivedData/
 xcuserdata/
 *.xcworkspace/xcuserdata/
 
+# Artifacts
+*.dmg
+*.ipa
+
 # macOS
 .DS_Store
